@@ -423,7 +423,7 @@ main() {
     fi
 
     # Launch E2.Micro in background (if not skipped due to cached limits)
-    if [[ "$should_launch_e2" == true ]]; then
+    if false; then
         log_info "Launching E2.1.Micro (AMD) instance in background..."
         (
             # Capture both exit code and any error output
@@ -781,10 +781,15 @@ $notification_details"
             fi
         fi
         
+        # Capacity on one shape + config error on other = normal (we only care about ARM)
+        if [[ $capacity_failures -gt 0 ]]; then
+            log_info "Capacity constraint (expected) - will retry on next schedule"
+            return 0
+        fi
         if [[ -n "$failure_summary" ]]; then
-            log_error "Parallel execution failed: $failure_summary - likely configuration or authentication errors"
+            log_error "Parallel execution failed: $failure_summary"
         else
-            log_error "Parallel execution failed: Both instance creation attempts failed"
+            log_error "Parallel execution failed"
         fi
 
         # Let individual shape failures handle their own error notifications
