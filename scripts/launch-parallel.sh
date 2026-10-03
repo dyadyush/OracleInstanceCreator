@@ -449,6 +449,7 @@ main() {
     else
         log_debug "Skipping E2.1.Micro launch due to cached limit state"
         PID_E2=""
+        echo "5" >"$e2_result"
     fi
 
     # Log concurrent execution start
