@@ -5,7 +5,7 @@ permissions:
 name: 'OCI Orchestrator - Infrastructure Deployment'
 
 on:
-  # schedule:
+  schedule:
     # Four-tier optimization: 10-min off-peak weekdays, 15-min peak weekdays, 10-min all weekend (~4,320 runs/month)
     # All schedules target Oracle Cloud optimal availability windows for maximum deployment success
 
@@ -25,7 +25,7 @@ on:
 
     # TIER 4: Weekend boost (10-min intervals all day)
     # Saturdays and Sundays - lower weekend cloud usage, no overlap with weekday tiers
-    # - cron: "*/10 * * * 6,0"
+    - cron: "*/10 * * * *"
 
   # Disabled to avoid triggering 429 on OCI API; also failures confuse claude when trying to fix PR checks
   # pull_request:
@@ -91,12 +91,12 @@ jobs:
       # Common configuration for both shapes
       # Multi-AD support: Use comma-separated list for multiple ADs
       # Example: "fgaj:AP-SINGAPORE-1-AD-1,fgaj:AP-SINGAPORE-1-AD-2,fgaj:AP-SINGAPORE-1-AD-3"
-      OCI_AD: "fgaj:AP-SINGAPORE-1-AD-1"
+      OCI_AD: "ooGe:UK-LONDON-1-AD-1,ooGe:UK-LONDON-1-AD-2,ooGe:UK-LONDON-1-AD-3"
       OCI_SHAPE: "VM.Standard.A1.Flex"  # Default shape for validation (overridden per-shape)
-      OCI_OCPUS: "4"  # Default for A1.Flex validation (overridden per-shape)
-      OCI_MEMORY_IN_GBS: "24"  # Default for A1.Flex validation (overridden per-shape)
-      INSTANCE_DISPLAY_NAME: "default-instance"  # Default for validation (overridden per-shape)
-      ASSIGN_PUBLIC_IP: "false"
+      OCI_OCPUS: "2"  # Default for A1.Flex validation (overridden per-shape)
+      OCI_MEMORY_IN_GBS: "12"  # Default for A1.Flex validation (overridden per-shape)
+      INSTANCE_DISPLAY_NAME: "arm-bot-server"  # Default for validation (overridden per-shape)
+      ASSIGN_PUBLIC_IP: "true"
       OPERATING_SYSTEM: "Oracle Linux"
       OS_VERSION: "10"
       # Boot volume configuration
