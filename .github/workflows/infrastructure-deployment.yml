@@ -91,7 +91,7 @@ jobs:
       # Common configuration for both shapes
       # Multi-AD support: Use comma-separated list for multiple ADs
       # Example: "fgaj:AP-SINGAPORE-1-AD-1,fgaj:AP-SINGAPORE-1-AD-2,fgaj:AP-SINGAPORE-1-AD-3"
-      OCI_AD: "ooGe:UK-LONDON-1-AD-1,ooGe:UK-LONDON-1-AD-2,ooGe:UK-LONDON-1-AD-3"
+      OCI_AD: "ooGe:UK-LONDON-1-AD-1,ooGe:UK-LONDON-1-AD-3"
       OCI_SHAPE: "VM.Standard.A1.Flex"  # Default shape for validation (overridden per-shape)
       OCI_OCPUS: "2"  # Default for A1.Flex validation (overridden per-shape)
       OCI_MEMORY_IN_GBS: "12"  # Default for A1.Flex validation (overridden per-shape)
