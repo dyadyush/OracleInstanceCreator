@@ -395,10 +395,11 @@ launch_instance() {
                 ;;
             "ORACLE_CAPACITY_UNAVAILABLE"|"CAPACITY")
                 # Track capacity-related failures for performance analysis and circuit breaker
-                log_performance_metric "AD_FAILURE" "$current_ad" "$((ad_index + 1))" "$max_attempts" "$error_type"
-                record_ad_result "$current_ad" "failure" "$error_type"
-                increment_ad_failure "$current_ad"  # Track for circuit breaker
-                record_failure_pattern "$current_ad" "$error_type" "$((ad_index + 1))" "$max_attempts"
+                # NOTE: || true — не даём ошибке в метриках остановить перебор AD
+                log_performance_metric "AD_FAILURE" "$current_ad" "$((ad_index + 1))" "$max_attempts" "$error_type" || true
+                record_ad_result "$current_ad" "failure" "$error_type" || true
+                increment_ad_failure "$current_ad" || true
+                record_failure_pattern "$current_ad" "$error_type" "$((ad_index + 1))" "$max_attempts" || true
                 
                 # Try next AD if available
                 if [[ $((ad_index + 1)) -lt $max_attempts ]]; then
