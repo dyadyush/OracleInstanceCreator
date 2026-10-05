@@ -104,6 +104,9 @@ jobs:
       # Instance recovery and compatibility settings
       RECOVERY_ACTION: "RESTORE_INSTANCE"
       LEGACY_IMDS_ENDPOINTS: "false"
+      GITHUB_ACTIONS_BILLING_TIMEOUT: "240"
+      INTERNAL_CYCLES: "5"
+      INTERNAL_CYCLE_WAIT: "30"
       # Retry configuration for multi-AD cycling
       RETRY_WAIT_TIME: "30"
       # Transient error retry configuration (retries on same AD before cycling)
