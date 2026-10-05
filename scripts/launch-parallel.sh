@@ -350,7 +350,8 @@ main() {
     local e2_result="${temp_dir}/e2_result"
 
     # Pre-create result files with secure permissions
-    touch "$a1_result" "$e2_result"
+    touch "$a1_result"
+    echo "5" >"$e2_result"   # 5 = user limit — E2 не нужен, не путать с успехом
     chmod 600 "$a1_result" "$e2_result"
 
     # Track resource usage at start of parallel execution
@@ -400,10 +401,42 @@ main() {
             # Capture both exit code and any error output
             set -o pipefail
             local exit_code=0
-            if ! launch_shape "A1.Flex" A1_FLEX_CONFIG; then
-                exit_code=$?
-                log_debug "A1.Flex launch_shape returned exit code: $exit_code"
-            fi
+            local max_cycles="${INTERNAL_CYCLES:-5}"
+            local cycle_wait="${INTERNAL_CYCLE_WAIT:-40}"
+            
+            for ((cycle=1; cycle<=max_cycles; cycle++)); do
+                log_info "=== A1.Flex internal cycle $cycle/$max_cycles ==="
+                
+                if ! launch_shape "A1.Flex" A1_FLEX_CONFIG; then
+                    exit_code=$?
+                else
+                    exit_code=0
+                fi
+                log_debug "A1.Flex cycle $cycle returned exit code: $exit_code"
+                
+                # Проверяем, не создался ли инстанс (на случай если Oracle вернул ошибку, но создал)
+                local comp_id_check
+                comp_id_check=$(require_env_var "OCI_COMPARTMENT_ID" 2>/dev/null) || comp_id_check=""
+                if [[ -n "$comp_id_check" ]]; then
+                    local found_id
+                    found_id=$(oci_cmd compute instance list \
+                        --compartment-id "$comp_id_check" \
+                        --display-name "${A1_FLEX_CONFIG[DISPLAY_NAME]}" \
+                        --lifecycle-state "RUNNING,PROVISIONING" \
+                        --query 'data[0].id' \
+                        --raw-output 2>/dev/null || echo "")
+                    if [[ -n "$found_id" && "$found_id" != "null" ]]; then
+                        log_success "A1.Flex instance created after cycle $cycle: $found_id"
+                        exit_code=0
+                        break
+                    fi
+                fi
+                
+                if [[ $cycle -lt $max_cycles ]]; then
+                    log_info "Cycle $cycle complete - sleeping ${cycle_wait}s before cycle $((cycle+1))"
+                    sleep "$cycle_wait"
+                fi
+            done
             
             # Ensure result file is written atomically
             local temp_result="${a1_result}.tmp"
@@ -411,7 +444,6 @@ main() {
             mv "$temp_result" "$a1_result"
             
             log_debug "A1.Flex background process writing exit code $exit_code to result file"
-            # Small delay to ensure file system flush
             sleep 0.1
             exit $exit_code
         ) &
@@ -420,36 +452,6 @@ main() {
     else
         log_debug "Skipping A1.Flex launch due to cached limit state"
         PID_A1=""
-    fi
-
-    # Launch E2.Micro in background (if not skipped due to cached limits)
-    if false; then
-        log_info "Launching E2.1.Micro (AMD) instance in background..."
-        (
-            # Capture both exit code and any error output
-            set -o pipefail
-            local exit_code=0
-            if ! launch_shape "E2.1.Micro" E2_MICRO_CONFIG; then
-                exit_code=$?
-                log_debug "E2.1.Micro launch_shape returned exit code: $exit_code"
-            fi
-            
-            # Ensure result file is written atomically
-            local temp_result="${e2_result}.tmp"
-            echo "$exit_code" > "$temp_result"
-            mv "$temp_result" "$e2_result"
-            
-            log_debug "E2.1.Micro background process writing exit code $exit_code to result file"
-            # Small delay to ensure file system flush
-            sleep 0.1
-            exit $exit_code
-        ) &
-        PID_E2=$!
-        log_debug "E2.1.Micro background process started with PID: $PID_E2"
-    else
-        log_debug "Skipping E2.1.Micro launch due to cached limit state"
-        PID_E2=""
-        echo "5" >"$e2_result"
     fi
 
     # Log concurrent execution start
