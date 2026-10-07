@@ -24,9 +24,10 @@ validation_error() {
 }
 
 # Log successful validation
-validation_success() {
+validation_error() {
     local message="$1"
-    log_success "✓ $message"
+    VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+    log_error "✗ $message"
 }
 
 # Log warning (non-blocking)
@@ -190,28 +191,6 @@ echo ""
 
 if [[ -n "${TELEGRAM_TOKEN:-}" && -n "${TELEGRAM_USER_ID:-}" ]]; then
     validation_success "Telegram credentials configured"
-    
-    # Test Telegram API connectivity silently (no actual notification sent)
-    # Use getMe API endpoint for silent connectivity validation
-    if curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/getMe" \
-        --connect-timeout 10 --max-time 15 >/dev/null 2>&1; then
-        validation_success "Telegram API connectivity verified"
-        
-        # Only send test notification if explicitly requested via environment variable
-        if [[ "${PREFLIGHT_SEND_TEST_NOTIFICATION:-false}" == "true" ]]; then
-            test_message="🔧 Oracle Instance Creator preflight check completed at $(date)"
-            if curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-                -d "chat_id=${TELEGRAM_USER_ID}" \
-                -d "text=${test_message}" \
-                -d "parse_mode=Markdown" >/dev/null 2>&1; then
-                validation_success "Telegram test notification sent"
-            else
-                validation_warning "Test notification failed but API is accessible"
-            fi
-        fi
-    else
-        validation_error "Telegram API connectivity test failed - check token and network"
-    fi
 else
     validation_warning "Telegram credentials not configured"
 fi
