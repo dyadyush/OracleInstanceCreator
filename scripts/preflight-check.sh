@@ -23,6 +23,12 @@ validation_error() {
     log_error "✗ $message"
 }
 
+# Log successful validation
+validation_success() {
+    local message="$1"
+    log_success "✓ $message"
+}
+
 # Log warning (non-blocking)
 validation_warning() {
     local message="$1"
