@@ -19,13 +19,6 @@ echo ""
 # Increment error counter and log error
 validation_error() {
     local message="$1"
-    ((VALIDATION_ERRORS++))
-    log_error "✗ $message"
-}
-
-# Log successful validation
-validation_error() {
-    local message="$1"
     VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
     log_error "✗ $message"
 }
@@ -81,7 +74,6 @@ check_required_var "OCI_REGION" "OCI Region"
 check_required_var "OCI_PRIVATE_KEY" "OCI Private Key"
 
 # Instance Configuration
-# OCI_COMPARTMENT_ID is optional - falls back to tenancy if not specified
 check_required_var "OCI_SUBNET_ID" "OCI Subnet ID"
 check_required_var "INSTANCE_SSH_PUBLIC_KEY" "SSH Public Key"
 
@@ -96,13 +88,11 @@ echo ""
 # Validate OCID formats
 validate_ocid_var "OCI_USER_OCID" "User OCID"
 validate_ocid_var "OCI_TENANCY_OCID" "Tenancy OCID"
-# Validate compartment OCID if provided (falls back to tenancy if not)
 if [[ -n "${OCI_COMPARTMENT_ID:-}" ]]; then
     validate_ocid_var "OCI_COMPARTMENT_ID" "Compartment OCID"
 fi
 validate_ocid_var "OCI_SUBNET_ID" "Subnet OCID"
 
-# Validate image OCID if provided
 if [[ -n "${OCI_IMAGE_ID:-}" ]]; then
     validate_ocid_var "OCI_IMAGE_ID" "Image OCID"
 else
@@ -113,11 +103,9 @@ echo ""
 log_info "3. Checking instance configuration..."
 echo ""
 
-# Instance shape validation
 if [[ -n "${OCI_SHAPE:-}" ]]; then
     validation_success "Instance shape: $OCI_SHAPE"
     
-    # Check for flexible shape configuration
     if [[ "$OCI_SHAPE" == *".Flex" ]]; then
         if [[ -n "${OCI_OCPUS:-}" && -n "${OCI_MEMORY_IN_GBS:-}" ]]; then
             validation_success "Flexible shape config: ${OCI_OCPUS} OCPUs, ${OCI_MEMORY_IN_GBS} GB RAM"
@@ -129,9 +117,7 @@ else
     validation_error "Instance shape not specified (OCI_SHAPE)"
 fi
 
-# Availability domain validation
 if [[ -n "${OCI_AD:-}" ]]; then
-    # Check if it's multi-AD format
     if [[ "$OCI_AD" == *","* ]]; then
         IFS=',' read -ra ad_list <<< "$OCI_AD"
         validation_success "Multi-AD configuration: ${#ad_list[@]} domains"
@@ -153,7 +139,6 @@ else
     validation_error "Availability domain not specified (OCI_AD)"
 fi
 
-# Operating system validation
 if [[ -n "${OPERATING_SYSTEM:-}" ]]; then
     validation_success "Operating system: ${OPERATING_SYSTEM} ${OS_VERSION:-}"
 else
@@ -164,21 +149,18 @@ echo ""
 log_info "4. Checking system dependencies..."
 echo ""
 
-# OCI CLI availability
 if command -v oci >/dev/null 2>&1; then
     validation_success "OCI CLI is installed ($(oci --version 2>/dev/null || echo 'version unknown'))"
 else
     validation_error "OCI CLI is not available"
 fi
 
-# jq availability (optional but recommended)
 if command -v jq >/dev/null 2>&1; then
     validation_success "jq is available ($(jq --version 2>/dev/null || echo 'version unknown'))"
 else
     validation_warning "jq not available - will use regex fallback for JSON parsing"
 fi
 
-# curl availability (for Telegram notifications)
 if command -v curl >/dev/null 2>&1; then
     validation_success "curl is available ($(curl --version 2>/dev/null | head -1 || echo 'version unknown'))"
 else
